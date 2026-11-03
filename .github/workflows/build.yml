@@ -7,14 +7,17 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Android APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -25,8 +28,22 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
 
+      - name: Install Android SDK Packages
+        run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.9'
+
+      - name: Check HTML File
+        run: |
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html not found in repository root!"
+            echo "Please upload index.html to the main repository folder."
+            exit 1
+          fi
 
       - name: Create Android Project
         run: |
@@ -88,19 +105,22 @@ jobs:
 
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
               <application
                   android:allowBackup="true"
                   android:label="FocusFlow"
                   android:theme="@android:style/Theme.Material.NoActionBar"
-                  android:usesCleartextTraffic="true">
+                  android:hardwareAccelerated="true">
 
                   <activity
                       android:name=".MainActivity"
                       android:exported="true">
+
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
+
                   </activity>
               </application>
           </manifest>
@@ -117,6 +137,7 @@ jobs:
           import android.graphics.Color;
 
           public class MainActivity extends Activity {
+
               private WebView webView;
 
               @Override
@@ -154,12 +175,12 @@ jobs:
 
       - name: Build Debug APK
         run: |
-          gradle wrapper --gradle-version 8.9
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          gradle --no-daemon assembleDebug
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: FocusFlow-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
