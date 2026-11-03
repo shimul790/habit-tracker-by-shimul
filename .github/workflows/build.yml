@@ -33,7 +33,7 @@ jobs:
           mkdir -p app/src/main/assets
           mkdir -p app/src/main/java/com/focusflow/app
 
-          cp FocusFlow/index.html app/src/main/assets/index.html
+          cp index.html app/src/main/assets/index.html
 
           cat > settings.gradle <<'EOF'
           pluginManagement {
